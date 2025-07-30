@@ -1,10 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+} from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/config/firebase";
 
-export default function Home() {
+export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,7 +25,7 @@ export default function Home() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleLogin = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -36,33 +39,37 @@ export default function Home() {
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     try {
       setLoading(true);
-      await signInWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       router.push("/dashboard");
     } catch (err) {
       const code = err.code;
       setLoading(false);
-      console.log(err);
-      
       switch (code) {
-        case "auth/invalid-email":
-          setError("No user with that email");
+        case "auth/email-already-in-use":
+          setError(
+            "Account already exists. Please login with the correct password."
+          );
+
           break;
-        case "auth/wrong-password":
-          setError("Your password is incorrect");
+
+        case "auth/weak-password":
+          setError("Your password is too short. Use 6 characters or more.");
           break;
-        case "auth/user-not-found":
-          setError("Incorrect email or password");
-          break;
+
         case "auth/network-request-failed":
-          setError("Network request failed");
+          setError("Network request failed. Check your connection.");
           break;
+
         case "auth/too-many-requests":
           setError(
-            "Access to this account has been temporarily disabled due to many failed login attempts. You can immediately restore it by resetting your password or try again later."
+            "Too many attempts. Please reset your password or try again later."
           );
           break;
+
         default:
           setError("Something went wrong. Please try again.");
       }
@@ -73,10 +80,9 @@ export default function Home() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4">
       <div className="w-full max-w-md bg-white p-8 rounded shadow">
         <h2 className="text-2xl font-bold mb-6 text-center">Spendwise</h2>
+        <h2 className="mb-6 text-center">Sign Up</h2>
 
-        <h2 className="mb-6 text-center">Login</h2>
-
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleSignup}>
           {/* Email */}
           <div className="mb-4">
             <label className="block text-gray-700">Email</label>
@@ -84,10 +90,7 @@ export default function Home() {
               type="email"
               className="w-full px-4 py-2 border border-gray-200 rounded mt-1"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError("");
-              }}
+              onChange={(e) => setEmail(e.target.value)}
               required
             />
           </div>
@@ -100,10 +103,7 @@ export default function Home() {
                 type={showPassword ? "text" : "password"}
                 className="w-full px-4 py-2 border border-gray-200 rounded mt-1 pr-10"
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError("");
-                }}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
               <button
@@ -119,20 +119,20 @@ export default function Home() {
           {/* Error message */}
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-          {/* Login button */}
+          {/* Signup button */}
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "Signin up..." : "Sign Up"}
           </button>
         </form>
 
-        {/* Signup link */}
+        {/* Login link */}
         <p className="mt-4 text-center text-sm text-gray-600">
-          Don’t have an account?{" "}
-          <a href="/signup" className="text-blue-600 hover:underline">
-            Sign up
+          Already have an account?{" "}
+          <a href="/" className="text-blue-600 hover:underline">
+            Login
           </a>
         </p>
       </div>
